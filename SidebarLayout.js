@@ -7,7 +7,6 @@ const sidebarStyle = {
   left: 0,
   background: 'white',
   zIndex: 1000,
-  boxShadow: '0px 8px 10px -5px rgba(0, 0, 0, 0.2), 0px 16px 24px 2px rgba(0, 0, 0, 0.14), 0px 6px 30px 5px rgba(0, 0, 0, 0.12)',
   height: '100%',
   overflowY: 'auto',
   transform: 'translate(-100%)',
@@ -27,7 +26,9 @@ const backLayerStyle = {
   opacity: 0,
   pointerEvents: 'none',
   willChange: 'opacity',
-  zIndex: 500
+  transition: 'opacity 225ms cubic-bezier(0, 0, 0.2, 1) 0ms',
+  zIndex: 500,
+  overflowX: 'hidden'
 };
 
 class SidebarLayout extends React.PureComponent {
@@ -35,7 +36,20 @@ class SidebarLayout extends React.PureComponent {
     super(props);
 
     this._isOpened = false;
+    this._isDragConfirmed = false;
+    this._identifier = null;
     this._toggle = this._toggle.bind(this);
+    this._onTouchStart = this._onTouchStart.bind(this);
+    this._onTouchMove = this._onTouchMove.bind(this);
+    this._onTouchEnd = this._onTouchEnd.bind(this);
+    this._onTouchCancel = this._onTouchCancel.bind(this);
+  }
+
+  componentDidMount() {
+    window.addEventListener('touchstart', this._onTouchStart);
+    window.addEventListener('touchmove', this._onTouchMove, { passive: false });
+    window.addEventListener('touchend', this._onTouchEnd);
+    window.addEventListener('touchcancel', this._onTouchCancel);
   }
 
   _toggle(value = !this._isOpened) {
@@ -54,6 +68,104 @@ class SidebarLayout extends React.PureComponent {
       : 'none';
 
     this._isOpened = value;
+  }
+
+  _onTouchStart(e) {
+    if (this._identifier !== null) {
+      return;
+    }
+
+    const touch = e.targetTouches[0];
+
+    if (!this._isOpened && touch.clientX > 16) {
+      return;
+    }
+
+    this._identifier = touch.identifier;
+
+    this._clientX = touch.clientX;
+    this._clientY = touch.clientY;
+  }
+
+  _onTouchMove(e) {
+    if (this._identifier === null) {
+      return;
+    }
+
+    let touch;
+
+    for (let i = 0, n = e.targetTouches.length; i < n; i++ ){
+      const currentTouch = e.targetTouches[i];
+
+      if (currentTouch.identifier === this._identifier) {
+        touch = currentTouch;
+        break;
+      }
+    }
+
+    if (!touch) {
+      return;
+    }
+
+    this._offsetX = touch.clientX - this._clientX;
+
+    if (!this._isDragConfirmed) {
+      const offsetX = Math.abs(this._offsetX);
+      const offsetY = Math.abs(touch.clientY - this._clientY);
+
+      if (offsetY > offsetX) {
+        this._onTouchCancel(e);
+        return;
+      }
+
+      this._isDragConfirmed = true;
+    }
+
+    e.preventDefault();
+
+    this._clientX = touch.clientX;
+    this._clientY = touch.clientY;
+
+    const width = this.refs.sidebar.offsetWidth;
+    const sidebarPosition = Math.max(Math.min(this._clientX - width, 0), -width);
+    this.refs.sidebar.style.transform = `translate(${sidebarPosition}px)`;
+    this.refs.backLayer.style.opacity = 1 + sidebarPosition / width;
+    this.refs.backLayer.style['pointer-events'] = 'all';
+  }
+
+  _onTouchEnd() {
+    if (this._identifier === null) {
+      return;
+    }
+
+    const width = this.refs.sidebar.offsetWidth;
+
+    let sidebarPosition;
+
+    if (this._offsetX > 10) {
+      sidebarPosition = 0;
+    } else if (this._offsetX < -10) {
+      sidebarPosition = -width;
+    } else {
+      sidebarPosition = this._clientX > width / 2
+        ? 0
+        : -width;
+    }
+
+    this.refs.sidebar.style.transform = `translate(${sidebarPosition}px)`;
+    this.refs.backLayer.style.opacity = sidebarPosition === 0 ? 1 : 0;
+    this.refs.backLayer.style['pointer-events'] = sidebarPosition === 0 ? 'all' : 'none';
+    this._identifier = null;
+    this._isDragConfirmed = false;
+    this._isOpened = sidebarPosition === 0;
+  }
+
+  _onTouchCancel() {
+    if (this._identifier === null) {
+      return;
+    }
+
+    this._identifier = null;
   }
 
   render() {
@@ -76,4 +188,3 @@ class SidebarLayout extends React.PureComponent {
 }
 
 export default SidebarLayout;
-
