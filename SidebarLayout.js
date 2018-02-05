@@ -129,6 +129,14 @@ class SidebarLayout extends React.PureComponent {
     const touch = e.targetTouches[0];
 
     if (!this._barCoef) {
+      this._startOffset = 0;
+    } else if (this._barCoef === 1) {
+      this._startOffset = Math.max(this.refs.leftbar.offsetWidth - touch.clientX, 0);
+    } else if (this._barCoef === -1) {
+      this._startOffset = Math.max(touch.clientX - document.body.offsetWidth + this.refs.rightbar.offsetWidth, 0);
+    }
+
+    if (!this._barCoef) {
       if (this.props.Leftbar && touch.clientX <= 16) {
         this._barCoef = 1;
       } else if (this.props.Rightbar && (touch.clientX >= document.body.offsetWidth - 16)) {
@@ -152,7 +160,7 @@ class SidebarLayout extends React.PureComponent {
 
     let touch;
 
-    for (let i = 0, n = e.targetTouches.length; i < n; i++ ){
+    for (let i = 0, n = e.targetTouches.length; i < n; i++) {
       const currentTouch = e.targetTouches[i];
 
       if (currentTouch.identifier === this._identifier) {
@@ -187,13 +195,18 @@ class SidebarLayout extends React.PureComponent {
     const sidebar = this._barCoef === 1 ? this.refs.leftbar : this.refs.rightbar;
     const width = sidebar.offsetWidth;
 
+    if (this._barCoef === 1 && width - this._clientX < this._startOffset) {
+      this._startOffset = Math.max(width - this._clientX, 0);
+    } else if (this._barCoef === -1 && touch.clientX - document.body.offsetWidth + width < this._startOffset) {
+      this._startOffset = Math.max(touch.clientX - document.body.offsetWidth + width, 0);
+    }
+
     const sidebarPosition = this._barCoef === 1
-      ? Math.max(Math.min(this._clientX - width, 0), -width)
-      : Math.max(Math.min(width - (document.body.offsetWidth - this._clientX), width), 0);
+      ? Math.max(Math.min(this._clientX - width + this._startOffset, 0), -width)
+      : Math.max(Math.min(width - document.body.offsetWidth + this._clientX - this._startOffset, width), 0);
 
     sidebar.style.transform = `translate(${sidebarPosition}px)`;
-    const opacity = 1 + this._barCoef * sidebarPosition / width;
-    this.refs.backLayer.style.opacity = opacity;
+    this.refs.backLayer.style.opacity = 1 + this._barCoef * sidebarPosition / width;
     this.refs.backLayer.style['pointer-events'] = 'all';
   }
 
@@ -225,7 +238,7 @@ class SidebarLayout extends React.PureComponent {
       } else {
         sidebarPosition = this._clientX > (document.body.offsetWidth - width / 2)
           ? width
-          : 0
+          : 0;
       }
     }
 
@@ -254,26 +267,12 @@ class SidebarLayout extends React.PureComponent {
     return (
       <div>
         {Leftbar && (
-          <div
-            ref="leftbar"
-            style={leftbarStyle}
-            onTouchStart={this.onTouchStart}
-            onTouchMove={this.onTouchMove}
-            onTouchEnd={this.onTouchEnd}
-            onTouchCancel={this.onTouchEnd}
-          >
+          <div ref="leftbar" style={leftbarStyle}>
             <Leftbar toggle={this._toggleLeftbar} />
           </div>
         )}
         {Rightbar && (
-          <div
-            ref="rightbar"
-            style={rightbarStyle}
-            onTouchStart={this.onTouchStart}
-            onTouchMove={this.onTouchMove}
-            onTouchEnd={this.onTouchEnd}
-            onTouchCancel={this.onTouchEnd}
-          >
+          <div ref="rightbar" style={rightbarStyle}>
             <Rightbar toggle={this._toggleRightbar} />
           </div>
         )}
