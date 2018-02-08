@@ -17,11 +17,10 @@
 
 * `Leftbar`: `Component` - a leftbar content
 * `Rightbar`: `Component` - a rightbar content
-* `children`: `node|func` - a main content
-Signature: `function(args: { onLefbarToggle: func, onRightbarToggle: func }) => node`
-  * `onLeftbarToggle`: `func` - toggles leftbar open state
-  * `onRightbarToggle`: `func` - toggles rightbar open state
-  Signature: `function(value: bool)`
+* `children`: `node` - a main content
+* `children`: `function({ onLeftbarToggle: func, onRightbarToggle: func }) => node` - a main content
+  * `onLeftbarToggle`: `function(value: ?bool) => void` - toggles leftbar open state
+  * `onRightbarToggle`: `function(value: ?bool) => void` - toggles rightbar open state
       * `value`: `bool` - an open state. If not set, toggles open state
 
 Note that leftbar and rightbar width depends on them content width

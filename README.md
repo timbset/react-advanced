@@ -5,7 +5,7 @@
 <h1 align="center">React Advanced</h1>
 
 React Advanced is a library with high-performance, customizable and perfect React components. 
-See the list of available [components](#Components)
+See the list of available [components](#components)
 
 ## Principles
 
