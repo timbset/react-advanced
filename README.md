@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="docs/logo.jpg">
+    <img width="200" src="docs/logo.jpg">
 </p>
 
 <h1 align="center">React Advanced</h1>
