@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 
 const sidebarStyle = {
   position: 'fixed',
@@ -12,13 +12,13 @@ const sidebarStyle = {
   willChange: 'transform'
 };
 
-const leftbarStyle = {
+const leftBarStyle = {
   ...sidebarStyle,
   left: 0,
   transform: 'translate(-100%)'
 };
 
-const rightbarStyle = {
+const rightBarStyle = {
   ...sidebarStyle,
   right: 0,
   transform: 'translate(100%)'
@@ -41,129 +41,122 @@ const backLayerStyle = {
   overflowX: 'hidden'
 };
 
-class SidebarLayout extends React.PureComponent {
-  constructor(props) {
-    super(props);
+const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
+  const barCoefRef = useRef(null);
+  const leftBarRef = useRef(null);
+  const rightBarRef = useRef(null);
+  const backLayerRef = useRef(null);
+  const isDragConfirmedRef = useRef(false);
+  const identifierRef = useRef(null);
+  const startOffsetRef = useRef(0);
+  const offsetXRef = useRef(0);
 
-    this._barCoef = null;
-    this._isDragConfirmed = false;
-    this._identifier = null;
-    this._toggleLeftbar = this._toggleLeftbar.bind(this);
-    this._toggleRightbar = this._toggleRightbar.bind(this);
-    this._closeAll = this._closeAll.bind(this);
-    this._onTouchStart = this._onTouchStart.bind(this);
-    this._onTouchMove = this._onTouchMove.bind(this);
-    this._onTouchEnd = this._onTouchEnd.bind(this);
-    this._onTouchCancel = this._onTouchCancel.bind(this);
+  const touchStartPositionRef = useRef({
+    clientX: 0,
+    clientY: 0,
+  });
 
-    this._childrenProps = {
-      toggleLeftbar: this._toggleLeftbar,
-      toggleRightbar: this._toggleRightbar
-    };
-  }
-
-  componentDidMount() {
-    window.addEventListener('touchstart', this._onTouchStart);
-    window.addEventListener('touchmove', this._onTouchMove, { passive: false });
-    window.addEventListener('touchend', this._onTouchEnd);
-    window.addEventListener('touchcancel', this._onTouchCancel);
-  }
-
-  _toggleLeftbar(value = (this._barCoef !== 1)) {
-    const { leftbar, rightbar, backLayer } = this.refs;
-
-    leftbar.style.transform = value
-      ? 'translate(0)'
-      : 'translate(-100%)';
-
-    if (value && rightbar) {
-      rightbar.style.transform = 'translate(100%)';
+  const toggleLeftBar = useCallback((value = (barCoefRef.current !== 1)) => {
+    if (leftBarRef.current != null) {
+      leftBarRef.current.style.transform = value
+        ? 'translate(0)'
+        : 'translate(-100%)';
     }
 
-    backLayer.style.opacity = value
-      ? 1
-      : 0;
-
-    backLayer.style['pointer-events'] = value
-      ? ''
-      : 'none';
-
-    this._barCoef = value ? 1 : null;
-  }
-
-  _toggleRightbar(value = (this._barCoef !== -1)) {
-    const { leftbar, rightbar, backLayer } = this.refs;
-
-    rightbar.style.transform = value
-      ? 'translate(0)'
-      : 'translate(100%)';
-
-    if (value && leftbar) {
-      leftbar.style.transform = 'translate(-100%)';
+    if (value && rightBarRef.current != null) {
+      rightBarRef.current.style.transform = 'translate(100%)';
     }
 
-    backLayer.style.opacity = value
-      ? 1
-      : 0;
+    if (backLayerRef.current != null) {
+      backLayerRef.current.style.opacity = value ? 1 : 0;
+      backLayerRef.current.style['pointer-events'] = value ? '' : 'none';
+    }
 
-    backLayer.style['pointer-events'] = value
-      ? ''
-      : 'none';
+    barCoefRef.current = value ? 1 : null;
+  }, []);
 
-    this._barCoef = value ? -1 : null;
-  }
+  const toggleRightBar = useCallback((value = (barCoefRef.current !== -1)) => {
+    if (rightBarRef.current != null) {
+      rightBarRef.current.style.transform = value
+        ? 'translate(0)'
+        : 'translate(100%)';
+    }
 
-  _closeAll() {
-    if (this._barCoef === 1) {
-      this._toggleLeftbar(false);
+    if (value && leftBarRef.current != null) {
+      leftBarRef.current.style.transform = 'translate(-100%)';
+    }
+
+    if (backLayerRef.current != null) {
+      backLayerRef.current.style.opacity = value ? 1 : 0;
+      backLayerRef.current.style['pointer-events'] = value ? '' : 'none';
+    }
+
+    barCoefRef.current = value ? -1 : null;
+  }, []);
+
+  const methodsRef = useRef({
+    toggleLeftBar,
+    toggleRightBar,
+  });
+
+  methodsRef.current.toggleLeftBar = toggleLeftBar;
+  methodsRef.current.toggleRightBar = toggleRightBar;
+
+  const closeAll = useCallback(() => {
+    if (barCoefRef.current === 1) {
+      methodsRef.current.toggleLeftBar(false);
     } else {
-      this._toggleRightbar(false);
+      methodsRef.current.toggleRightBar(false);
     }
-  }
+  }, []);
 
-  _onTouchStart(e) {
-    if (this._identifier !== null) {
+  const onTouchStart = useCallback((event) => {
+    if (identifierRef.current != null) {
       return;
     }
 
-    const touch = e.targetTouches[0];
+    const touch = event.targetTouches[0];
 
-    if (!this._barCoef) {
-      this._startOffset = 0;
-    } else if (this._barCoef === 1) {
-      this._startOffset = Math.max(this.refs.leftbar.offsetWidth - touch.clientX, 0);
-    } else if (this._barCoef === -1) {
-      this._startOffset = Math.max(touch.clientX - document.body.offsetWidth + this.refs.rightbar.offsetWidth, 0);
-    }
-
-    if (!this._barCoef) {
-      if (this.props.Leftbar && touch.clientX <= 16) {
-        this._barCoef = 1;
-      } else if (this.props.Rightbar && (touch.clientX >= document.body.offsetWidth - 16)) {
-        this._barCoef = -1;
+    if (!barCoefRef.current) {
+      startOffsetRef.current = 0;
+    } else if (barCoefRef.current === 1) {
+      if (leftBarRef.current != null) {
+        startOffsetRef.current = Math.max(leftBarRef.current.offsetWidth - touch.clientX, 0);
+      }
+    } else if (barCoefRef.current === -1) {
+      if (rightBarRef.current != null) {
+        startOffsetRef.current = Math.max(touch.clientX - document.body.offsetWidth + rightBarRef.current.offsetWidth, 0);
       }
     }
 
-    if (!this._barCoef) {
+    if (!barCoefRef.current) {
+      if (leftBarRef.current != null && touch.clientX <= 16) {
+        barCoefRef.current = 1;
+      } else if (rightBarRef.current != null && (touch.clientX >= document.body.offsetWidth - 16)) {
+        barCoefRef.current = -1;
+      }
+    }
+
+    if (!barCoefRef.current) {
       return;
     }
 
-    this._identifier = touch.identifier;
-    this._clientX = touch.clientX;
-    this._clientY = touch.clientY;
-  }
+    identifierRef.current = touch.identifier;
+    touchStartPositionRef.current.clientX = touch.clientX;
+    touchStartPositionRef.current.clientY = touch.clientY;
+  }, []);
 
-  _onTouchMove(e) {
-    if (this._identifier === null) {
+  const onTouchMove = useCallback((event) => {
+    if (identifierRef.current == null) {
       return;
     }
 
     let touch;
 
-    for (let i = 0, n = e.targetTouches.length; i < n; i++) {
-      const currentTouch = e.targetTouches[i];
+    for (let i = 0, n = event.targetTouches.length; i < n; i++) {
+      const currentTouch = event.targetTouches[i];
 
-      if (currentTouch.identifier === this._identifier) {
+      if (currentTouch.identifier === identifierRef.current) {
         touch = currentTouch;
         break;
       }
@@ -173,116 +166,152 @@ class SidebarLayout extends React.PureComponent {
       return;
     }
 
-    this._offsetX = touch.clientX - this._clientX;
+    offsetXRef.current = touch.clientX - touchStartPositionRef.current.clientX;
 
-    if (!this._isDragConfirmed) {
-      const offsetX = Math.abs(this._offsetX);
-      const offsetY = Math.abs(touch.clientY - this._clientY);
+    if (!isDragConfirmedRef.current) {
+      const offsetX = Math.abs(touchStartPositionRef.current.clientX);
+      const offsetY = Math.abs(touch.clientY - touchStartPositionRef.current.clientY);
 
       if (offsetY > offsetX) {
-        this._onTouchCancel(e);
+        onTouchCancel();
         return;
       }
 
-      this._isDragConfirmed = true;
+      isDragConfirmedRef.current = true;
     }
 
-    e.preventDefault();
+    event.preventDefault();
 
-    this._clientX = touch.clientX;
-    this._clientY = touch.clientY;
+    touchStartPositionRef.current.clientX = touch.clientX;
+    touchStartPositionRef.current.clientY = touch.clientY;
 
-    const sidebar = this._barCoef === 1 ? this.refs.leftbar : this.refs.rightbar;
-    const width = sidebar.offsetWidth;
+    const sidebarRef = barCoefRef.current === 1 ? leftBarRef : rightBarRef;
 
-    if (this._barCoef === 1 && width - this._clientX < this._startOffset) {
-      this._startOffset = Math.max(width - this._clientX, 0);
-    } else if (this._barCoef === -1 && touch.clientX - document.body.offsetWidth + width < this._startOffset) {
-      this._startOffset = Math.max(touch.clientX - document.body.offsetWidth + width, 0);
+    if (sidebarRef.current != null) {
+      const width = sidebarRef.current.offsetWidth;
+
+      if (barCoefRef.current === 1 && width - touchStartPositionRef.current.clientX < startOffsetRef.current) {
+        startOffsetRef.current = Math.max(width - touchStartPositionRef.current.clientX, 0);
+      } else if (barCoefRef.current === -1 && touch.clientX - document.body.offsetWidth + width < startOffsetRef.current) {
+        startOffsetRef.current = Math.max(touch.clientX - document.body.offsetWidth + width, 0);
+      }
+
+      const sidebarPosition = barCoefRef.current === 1
+        ? Math.max(
+          Math.min(
+            touchStartPositionRef.current.clientX - width + startOffsetRef.current,
+            0,
+          ),
+          -width,
+        )
+        : Math.max(
+          Math.min(
+            width - document.body.offsetWidth + touchStartPositionRef.current.clientX - startOffsetRef.current,
+            width,
+          ),
+          0,
+        );
+
+      sidebarRef.current.style.transform = `translate(${sidebarPosition}px)`;
     }
 
-    const sidebarPosition = this._barCoef === 1
-      ? Math.max(Math.min(this._clientX - width + this._startOffset, 0), -width)
-      : Math.max(Math.min(width - document.body.offsetWidth + this._clientX - this._startOffset, width), 0);
+    if (backLayerRef.current != null) {
+      backLayerRef.current.style.opacity = 1 + barCoefRef.current * sidebarPosition / width;
+      backLayerRef.current.style['pointer-events'] = 'all';
+    }
+  }, []);
 
-    sidebar.style.transform = `translate(${sidebarPosition}px)`;
-    this.refs.backLayer.style.opacity = 1 + this._barCoef * sidebarPosition / width;
-    this.refs.backLayer.style['pointer-events'] = 'all';
-  }
-
-  _onTouchEnd() {
-    if (this._identifier === null) {
+  const onTouchEnd = useCallback(() => {
+    if (identifierRef.current == null) {
       return;
     }
 
-    const sidebar = this._barCoef === 1 ? this.refs.leftbar : this.refs.rightbar;
-    const width = sidebar.offsetWidth;
-
+    const sideBarRef = barCoefRef.current === 1 ? leftBarRef : rightBarRef;
     let sidebarPosition;
 
-    if (this._barCoef === 1) {
-      if (this._offsetX > 10) {
-        sidebarPosition = 0;
-      } else if (this._offsetX < -10) {
-        sidebarPosition = -width;
+    if (sideBarRef.current != null) {
+      const width = sideBarRef.current.offsetWidth;
+
+      if (barCoefRef.current === 1) {
+        if (offsetXRef.current > 10) {
+          sidebarPosition = 0;
+        } else if (offsetXRef.current < -10) {
+          sidebarPosition = -width;
+        } else {
+          sidebarPosition = touchStartPositionRef.current.clientX > width / 2
+            ? 0
+            : -width;
+        }
       } else {
-        sidebarPosition = this._clientX > width / 2
-          ? 0
-          : -width;
+        if (offsetXRef.current < -10) {
+          sidebarPosition = 0;
+        } else if (offsetXRef.current > 10) {
+          sidebarPosition = width;
+        } else {
+          sidebarPosition = touchStartPositionRef.current.clientX > (document.body.offsetWidth - width / 2)
+            ? width
+            : 0;
+        }
       }
-    } else {
-      if (this._offsetX < -10) {
-        sidebarPosition = 0;
-      } else if (this._offsetX > 10) {
-        sidebarPosition = width;
-      } else {
-        sidebarPosition = this._clientX > (document.body.offsetWidth - width / 2)
-          ? width
-          : 0;
-      }
+
+      sideBarRef.current.style.transform = `translate(${sidebarPosition}px)`;
     }
 
-    sidebar.style.transform = `translate(${sidebarPosition}px)`;
-    this.refs.backLayer.style.opacity = sidebarPosition === 0 ? 1 : 0;
-    this.refs.backLayer.style['pointer-events'] = sidebarPosition === 0 ? 'all' : 'none';
-    this._identifier = null;
-    this._isDragConfirmed = false;
+    if (backLayerRef.current != null) {
+      backLayerRef.current.style.opacity = sidebarPosition === 0 ? 1 : 0;
+      backLayerRef.current.style['pointer-events'] = sidebarPosition === 0 ? 'all' : 'none';
+    }
+
+    identifierRef.current = null;
+    isDragConfirmedRef.current = false;
 
     if (sidebarPosition !== 0) {
-      this._barCoef = null;
+      barCoefRef.current = null;
     }
-  }
+  }, []);
 
-  _onTouchCancel() {
-    if (this._identifier === null) {
-      return;
-    }
+  const onTouchCancel = useCallback(() => {
+    identifierRef.current = null;
+  }, []);
 
-    this._identifier = null;
-  }
+  useEffect(() => {
+    window.addEventListener('touchstart', onTouchStart);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchcancel', onTouchCancel);
 
-  render() {
-    const { children, Leftbar, Rightbar } = this.props;
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove, { passive: false });
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchCancel);
+    };
+  }, [onTouchStart, onTouchMove, onTouchEnd, onTouchCancel]);
 
-    return (
-      <div>
-        {Leftbar && (
-          <div ref="leftbar" style={leftbarStyle}>
-            <Leftbar toggle={this._toggleLeftbar} />
-          </div>
-        )}
-        {Rightbar && (
-          <div ref="rightbar" style={rightbarStyle}>
-            <Rightbar toggle={this._toggleRightbar} />
-          </div>
-        )}
-        {typeof children === 'function'
-          ? children(this._childrenProps)
-          : children}
-        <div ref="backLayer" style={backLayerStyle} onClick={this._closeAll} />
-      </div>
-    );
-  }
-}
+  return (
+    <div>
+      {Leftbar && (
+        <div ref={leftBarRef} style={leftBarStyle}>
+          <Leftbar toggle={toggleLeftBar} />
+        </div>
+      )}
+      {Rightbar && (
+        <div ref={rightBarRef} style={rightBarStyle}>
+          <Rightbar toggle={toggleRightBar} />
+        </div>
+      )}
+      {typeof children === 'function'
+        ? children({
+          toggleLeftBar,
+          toggleRightBar,
+          // backward compatibility
+          toggleLeftbar: toggleLeftBar,
+          toggleRightbar: toggleRightBar,
+        })
+        : children}
+      <div ref={backLayerRef} style={backLayerStyle} onClick={closeAll} />
+    </div>
+  );
+};
 
 export default SidebarLayout;
