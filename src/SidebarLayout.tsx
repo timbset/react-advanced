@@ -1,6 +1,13 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, {
+  useCallback,
+  useRef,
+  useEffect,
+  CSSProperties,
+  ReactNode,
+  JSXElementConstructor,
+} from 'react';
 
-const sidebarStyle = {
+const sidebarStyle: CSSProperties = {
   position: 'fixed',
   top: 0,
   bottom: 0,
@@ -12,19 +19,19 @@ const sidebarStyle = {
   willChange: 'transform'
 };
 
-const leftBarStyle = {
+const leftBarStyle: CSSProperties = {
   ...sidebarStyle,
   left: 0,
   transform: 'translate(-100%)'
 };
 
-const rightBarStyle = {
+const rightBarStyle: CSSProperties = {
   ...sidebarStyle,
   right: 0,
   transform: 'translate(100%)'
 };
 
-const backLayerStyle = {
+const backLayerStyle: CSSProperties = {
   position: 'fixed',
   height: '100%',
   width: '100%',
@@ -41,13 +48,41 @@ const backLayerStyle = {
   overflowX: 'hidden'
 };
 
-const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
-  const barCoefRef = useRef(null);
-  const leftBarRef = useRef(null);
-  const rightBarRef = useRef(null);
-  const backLayerRef = useRef(null);
+interface ToggleFunction {
+  (value?: boolean): void
+}
+
+type SidebarComponent = JSXElementConstructor<{ toggle: ToggleFunction }>;
+
+const SidebarLayout = ({
+  children,
+  LeftBar: LeftBarNext,
+  RightBar: RightBarNext,
+  Leftbar,
+  Rightbar,
+}: {
+  children: ReactNode | ((params: {
+    toggleLeftBar: ToggleFunction,
+    toggleRightBar: ToggleFunction,
+    // backward compatibility
+    toggleLeftbar: ToggleFunction,
+    toggleRightbar: ToggleFunction,
+  }) => ReactNode),
+  LeftBar?: SidebarComponent,
+  RightBar?: SidebarComponent,
+  // backward compatibility
+  Leftbar?: SidebarComponent,
+  Rightbar?: SidebarComponent,
+}) => {
+  const LeftBar = LeftBarNext || Leftbar;
+  const RightBar = RightBarNext || Rightbar;
+
+  const barCoefRef = useRef<number | null>(null);
+  const leftBarRef = useRef<HTMLDivElement | null>(null);
+  const rightBarRef = useRef<HTMLDivElement | null>(null);
+  const backLayerRef = useRef<HTMLDivElement | null>(null);
   const isDragConfirmedRef = useRef(false);
-  const identifierRef = useRef(null);
+  const identifierRef = useRef<number | null>(null);
   const startOffsetRef = useRef(0);
   const offsetXRef = useRef(0);
 
@@ -56,7 +91,7 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
     clientY: 0,
   });
 
-  const toggleLeftBar = useCallback((value = (barCoefRef.current !== 1)) => {
+  const toggleLeftBar = useCallback<ToggleFunction>((value = (barCoefRef.current !== 1)) => {
     if (leftBarRef.current != null) {
       leftBarRef.current.style.transform = value
         ? 'translate(0)'
@@ -68,14 +103,14 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
     }
 
     if (backLayerRef.current != null) {
-      backLayerRef.current.style.opacity = value ? 1 : 0;
-      backLayerRef.current.style['pointer-events'] = value ? '' : 'none';
+      backLayerRef.current.style.opacity = value ? '1' : '0';
+      backLayerRef.current.style.pointerEvents = value ? '' : 'none';
     }
 
     barCoefRef.current = value ? 1 : null;
   }, []);
 
-  const toggleRightBar = useCallback((value = (barCoefRef.current !== -1)) => {
+  const toggleRightBar = useCallback<ToggleFunction>((value = (barCoefRef.current !== -1)) => {
     if (rightBarRef.current != null) {
       rightBarRef.current.style.transform = value
         ? 'translate(0)'
@@ -87,8 +122,8 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
     }
 
     if (backLayerRef.current != null) {
-      backLayerRef.current.style.opacity = value ? 1 : 0;
-      backLayerRef.current.style['pointer-events'] = value ? '' : 'none';
+      backLayerRef.current.style.opacity = value ? '1' : '0';
+      backLayerRef.current.style.pointerEvents = value ? '' : 'none';
     }
 
     barCoefRef.current = value ? -1 : null;
@@ -110,7 +145,7 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
     }
   }, []);
 
-  const onTouchStart = useCallback((event) => {
+  const onTouchStart = useCallback((event: TouchEvent) => {
     if (identifierRef.current != null) {
       return;
     }
@@ -146,7 +181,11 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
     touchStartPositionRef.current.clientY = touch.clientY;
   }, []);
 
-  const onTouchMove = useCallback((event) => {
+  const onTouchCancel = useCallback(() => {
+    identifierRef.current = null;
+  }, []);
+
+  const onTouchMove = useCallback((event: TouchEvent) => {
     if (identifierRef.current == null) {
       return;
     }
@@ -186,9 +225,11 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
     touchStartPositionRef.current.clientY = touch.clientY;
 
     const sidebarRef = barCoefRef.current === 1 ? leftBarRef : rightBarRef;
+    let sidebarPosition = 0;
+    let width = 0;
 
     if (sidebarRef.current != null) {
-      const width = sidebarRef.current.offsetWidth;
+      width = sidebarRef.current.offsetWidth;
 
       if (barCoefRef.current === 1 && width - touchStartPositionRef.current.clientX < startOffsetRef.current) {
         startOffsetRef.current = Math.max(width - touchStartPositionRef.current.clientX, 0);
@@ -196,7 +237,7 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
         startOffsetRef.current = Math.max(touch.clientX - document.body.offsetWidth + width, 0);
       }
 
-      const sidebarPosition = barCoefRef.current === 1
+      sidebarPosition = barCoefRef.current === 1
         ? Math.max(
           Math.min(
             touchStartPositionRef.current.clientX - width + startOffsetRef.current,
@@ -216,10 +257,13 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
     }
 
     if (backLayerRef.current != null) {
-      backLayerRef.current.style.opacity = 1 + barCoefRef.current * sidebarPosition / width;
-      backLayerRef.current.style['pointer-events'] = 'all';
+      if (barCoefRef.current != null) {
+        backLayerRef.current.style.opacity = `${1 + barCoefRef.current * sidebarPosition / width}`;
+      }
+
+      backLayerRef.current.style.pointerEvents = 'all';
     }
-  }, []);
+  }, [onTouchCancel]);
 
   const onTouchEnd = useCallback(() => {
     if (identifierRef.current == null) {
@@ -258,8 +302,8 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
     }
 
     if (backLayerRef.current != null) {
-      backLayerRef.current.style.opacity = sidebarPosition === 0 ? 1 : 0;
-      backLayerRef.current.style['pointer-events'] = sidebarPosition === 0 ? 'all' : 'none';
+      backLayerRef.current.style.opacity = sidebarPosition === 0 ? '1' : '0';
+      backLayerRef.current.style.pointerEvents = sidebarPosition === 0 ? 'all' : 'none';
     }
 
     identifierRef.current = null;
@@ -270,10 +314,6 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
     }
   }, []);
 
-  const onTouchCancel = useCallback(() => {
-    identifierRef.current = null;
-  }, []);
-
   useEffect(() => {
     window.addEventListener('touchstart', onTouchStart);
     window.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -282,7 +322,7 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
 
     return () => {
       window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove, { passive: false });
+      window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
       window.removeEventListener('touchcancel', onTouchCancel);
     };
@@ -290,14 +330,14 @@ const SidebarLayout = ({ children, Leftbar, Rightbar }) => {
 
   return (
     <div>
-      {Leftbar && (
+      {LeftBar && (
         <div ref={leftBarRef} style={leftBarStyle}>
-          <Leftbar toggle={toggleLeftBar} />
+          <LeftBar toggle={toggleLeftBar} />
         </div>
       )}
-      {Rightbar && (
+      {RightBar && (
         <div ref={rightBarRef} style={rightBarStyle}>
-          <Rightbar toggle={toggleRightBar} />
+          <RightBar toggle={toggleRightBar} />
         </div>
       )}
       {typeof children === 'function'
