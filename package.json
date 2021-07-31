@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "cross-env NODE_ENV=production babel ./src --out-dir ./build --ignore *.test.js",
+    "build": "tsc",
     "copy-files": "babel-node scripts/copy-files.js",
     "release": "yarn build && yarn copy-files && npm publish build",
     "test": "echo \"Error: no test specified\" && exit 1"
