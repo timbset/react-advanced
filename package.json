@@ -1,6 +1,6 @@
 {
   "name": "react-advanced",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -20,11 +20,15 @@
   },
   "homepage": "https://github.com/timbset/react-advanced#readme",
   "devDependencies": {
+    "@types/react": "^17.0.15",
     "babel-cli": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
     "babel-preset-stage-2": "^6.24.1",
     "cross-env": "^5.1.6",
-    "fs-extra": "^6.0.1"
+    "fs-extra": "^6.0.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "typescript": "^4.3.5"
   }
 }
