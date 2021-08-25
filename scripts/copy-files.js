@@ -6,7 +6,7 @@ try {
   filesToCopy.forEach(fileName => {
     fs.copySync(
       `${process.cwd()}/${fileName}`,
-      `${process.cwd()}/build/${fileName}`
+      `${process.cwd()}/dist/${fileName}`
     );
   });
 } catch (e) {

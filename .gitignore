@@ -59,4 +59,4 @@ typings/
 
 # WebStorm
 .idea
-build
+dist

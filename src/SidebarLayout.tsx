@@ -48,11 +48,26 @@ const backLayerStyle: CSSProperties = {
   overflowX: 'hidden'
 };
 
-interface ToggleFunction {
+export interface SidebarLayoutToggleFunction {
   (value?: boolean): void
 }
 
-type SidebarComponent = JSXElementConstructor<{ toggle: ToggleFunction }>;
+export type SidebarLayoutComponent = JSXElementConstructor<{ toggle: SidebarLayoutToggleFunction }>;
+
+export interface SidebarLayoutProps {
+  children: ReactNode | ((params: {
+    toggleLeftBar: SidebarLayoutToggleFunction,
+    toggleRightBar: SidebarLayoutToggleFunction,
+    // backward compatibility
+    toggleLeftbar: SidebarLayoutToggleFunction,
+    toggleRightbar: SidebarLayoutToggleFunction,
+  }) => ReactNode),
+  LeftBar?: SidebarLayoutComponent,
+  RightBar?: SidebarLayoutComponent,
+  // backward compatibility
+  Leftbar?: SidebarLayoutComponent,
+  Rightbar?: SidebarLayoutComponent,
+}
 
 const SidebarLayout = ({
   children,
@@ -60,20 +75,7 @@ const SidebarLayout = ({
   RightBar: RightBarNext,
   Leftbar,
   Rightbar,
-}: {
-  children: ReactNode | ((params: {
-    toggleLeftBar: ToggleFunction,
-    toggleRightBar: ToggleFunction,
-    // backward compatibility
-    toggleLeftbar: ToggleFunction,
-    toggleRightbar: ToggleFunction,
-  }) => ReactNode),
-  LeftBar?: SidebarComponent,
-  RightBar?: SidebarComponent,
-  // backward compatibility
-  Leftbar?: SidebarComponent,
-  Rightbar?: SidebarComponent,
-}) => {
+}: SidebarLayoutProps) => {
   const LeftBar = LeftBarNext || Leftbar;
   const RightBar = RightBarNext || Rightbar;
 
@@ -91,7 +93,7 @@ const SidebarLayout = ({
     clientY: 0,
   });
 
-  const toggleLeftBar = useCallback<ToggleFunction>((value = (barCoefRef.current !== 1)) => {
+  const toggleLeftBar = useCallback<SidebarLayoutToggleFunction>((value = (barCoefRef.current !== 1)) => {
     if (leftBarRef.current != null) {
       leftBarRef.current.style.transform = value
         ? 'translate(0)'
@@ -110,7 +112,7 @@ const SidebarLayout = ({
     barCoefRef.current = value ? 1 : null;
   }, []);
 
-  const toggleRightBar = useCallback<ToggleFunction>((value = (barCoefRef.current !== -1)) => {
+  const toggleRightBar = useCallback<SidebarLayoutToggleFunction>((value = (barCoefRef.current !== -1)) => {
     if (rightBarRef.current != null) {
       rightBarRef.current.style.transform = value
         ? 'translate(0)'
@@ -208,7 +210,7 @@ const SidebarLayout = ({
     offsetXRef.current = touch.clientX - touchStartPositionRef.current.clientX;
 
     if (!isDragConfirmedRef.current) {
-      const offsetX = Math.abs(touchStartPositionRef.current.clientX);
+      const offsetX = Math.abs(touch.clientX - touchStartPositionRef.current.clientX);
       const offsetY = Math.abs(touch.clientY - touchStartPositionRef.current.clientY);
 
       if (offsetY > offsetX) {
@@ -354,4 +356,4 @@ const SidebarLayout = ({
   );
 };
 
-export default SidebarLayout;
+export default React.memo(SidebarLayout);
