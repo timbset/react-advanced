@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "tsc",
     "copy-files": "babel-node scripts/copy-files.js",
-    "release": "yarn prepare && yarn copy-files && npm publish build",
+    "release": "yarn prepare && yarn copy-files && npm publish dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
