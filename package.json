@@ -1,19 +1,19 @@
 {
   "name": "react-advanced",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "prepare": "tsc",
     "copy-files": "babel-node scripts/copy-files.js",
-    "release": "yarn build && yarn copy-files && npm publish build",
+    "release": "yarn prepare && yarn copy-files && npm publish build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/timbset/react-advanced.git"
   },
-  "author": "",
+  "author": "Timofey Traynenkov <timbset@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/timbset/react-advanced/issues"

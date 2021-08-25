@@ -7,6 +7,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react",
-    "outDir": "./build"
+    "outDir": "./dist"
   }
 }
